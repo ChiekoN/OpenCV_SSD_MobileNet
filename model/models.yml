@@ -1,0 +1,13 @@
+%YAML:1.0
+# TensorFlow implementation of SSD model from https://github.com/tensorflow/models/tree/master/research/object_detection
+ssd_tf:
+  model: "../model/frozen_inference_graph.pb"
+  config: "../model/ssd_mobilenet_v2_coco_2018_03_29.pbtxt"
+  mean: [0, 0, 0]
+  scale: 1.0
+  width: 300
+  height: 300
+  rgb: true
+  classes: "../model/object_detection_classes_coco.txt"
+  sample: "object_detection"
+
