@@ -33,23 +33,42 @@ void callback(int pos, void *userdata)
 }
 */
 
-int main() {
+int main(int argc, char** argv)
+{
+    // Get command line options.
 
-    // std::string img_file = "./images/IMG_3083.JPG";
-    // std::string img_file = "./images/IMG_3820.JPG";
-    // std::string img_file = "../images/IMG_3475.JPG";
-    std::string img_file = "../images/sweets.jpg";
+    const cv::String keys = 
+        "{help h usage ? |      | print this message. }"
+        "{c conf         |   .5 | Confidence threshold. }"
+        "{n nms          |   .5 | Non-max suppression threshold. }"
+        "{@input         |<none>| Input image or movie file. }";
+    cv::CommandLineParser parser(argc, argv, keys);
+    parser.about("SSD MobileNet Object Detection with C++");
+    if(parser.has("help") || argc == 1)
+    {
+        parser.printMessage();
+        return 0;
+    }
+    float conf_threshold = parser.get<float>("c");
+    float nms_threshold = parser.get<float>("n");
 
-    float conf_threshold = .5;
-    float nms_threshold = .5;
-   
+    // Check if the input file has been specified properly.
+    std::string img_file = parser.get<std::string>("@input");
+    if(img_file == "")
+    {
+        std::cout << "Input file is not specified.\n";
+        parser.printMessage();
+        return 0;
+    }
+    if(!cv::utils::fs::exists(img_file))
+    {
+        std::cout << "Input file (" << img_file << ") not found.\n" ;
+        return 0;
+    }
+
+
+    // Create SSD MobileNet model
     SSDModel ssd_model = SSDModel(conf_threshold, nms_threshold);
-
-    // Create a window.
-    static const std::string kWinName = "Deep Learning object detection in OpenCV";
-    // Make a window
-    cv::namedWindow(kWinName, cv::WINDOW_AUTOSIZE);
-
 
     /*
     // Set confidence threshold
@@ -73,6 +92,9 @@ int main() {
         cv::resize(image_orig, image, cv::Size(resize_w, resize_h));
     }
 
+    // Create a window.
+    static const std::string kWinName = "Deep Learning object detection in OpenCV";
+    cv::namedWindow(kWinName, cv::WINDOW_AUTOSIZE);
     
     std::vector<int> indices = ssd_model.detect(image);
 
