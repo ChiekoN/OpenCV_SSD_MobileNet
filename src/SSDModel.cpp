@@ -72,6 +72,10 @@ static void callback(int pos, void *userdata)
 }
 */
 
+int &SSDModel::getDetectedClassId(int index)
+{
+    return classIds[index];
+}
 std::string &SSDModel::getDetectedClassName(int index)
 {
     return classes[classIds[index]];
@@ -83,6 +87,10 @@ float &SSDModel::getDetectedConfidence(int index)
 cv::Rect &SSDModel::getDetectedBox(int index)
 {
     return boxes[index];
+}
+int SSDModel::getClassNumber()
+{
+    return classes.size();
 }
 
 // Private

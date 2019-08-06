@@ -1,7 +1,7 @@
 // SSDModel class
 #ifndef SSDMODEL_H
 #define SSDMODEL_H
-
+#include <opencv2/dnn.hpp>
 
 
 class SSDModel {
@@ -12,9 +12,11 @@ class SSDModel {
     // Functions  
     /*  static void callback(int pos, void *userdata); */
     // Getter
+    int &getDetectedClassId(int index);
     std::string &getDetectedClassName(int index);
     float &getDetectedConfidence(int index);
     cv::Rect &getDetectedBox(int index);
+    int getClassNumber();
 
     std::vector<int> &detect(cv::Mat &image);
 

@@ -24,6 +24,7 @@
 #include <opencv2/core/utils/filesystem.hpp>
 
 #include "SSDModel.h"
+#include "Graphic.h"
 
 
 /*
@@ -77,6 +78,7 @@ int main(int argc, char** argv)
     */
 
     // Open an image file
+    /* 
     cv::Mat image = cv::imread(img_file);
     if(image.empty())
     {
@@ -91,13 +93,20 @@ int main(int argc, char** argv)
         cv::Mat image_orig = image;
         cv::resize(image_orig, image, cv::Size(resize_w, resize_h));
     }
+    */
+    Graphic imageObj = Graphic(img_file);
+    imageObj.setClassColor(ssd_model.getClassNumber());
 
     // Create a window.
+    /* 
     static const std::string kWinName = "Deep Learning object detection in OpenCV";
     cv::namedWindow(kWinName, cv::WINDOW_AUTOSIZE);
-    
-    std::vector<int> indices = ssd_model.detect(image);
+    */
 
+    std::vector<int> result_indices = ssd_model.detect(imageObj.getImage());
+    imageObj.drawResult(ssd_model, result_indices);
+
+    /*
     for(size_t i = 0; i < indices.size(); i++)
     {
         std::cout << i << " : class = " << ssd_model.getDetectedClassName(indices[i]) << 
@@ -110,6 +119,8 @@ int main(int argc, char** argv)
     
     cv::imshow(kWinName, image);
     //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    */
+
     cv::waitKey(0);
     
     return 0;
