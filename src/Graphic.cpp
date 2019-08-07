@@ -28,8 +28,9 @@ Graphic::Graphic(std::string img_path)
 
 void Graphic::setClassColor(int class_num)
 {
-    std::random_device random_device;
-    std::mt19937 random_engine(random_device());
+    //std::random_device random_device;
+    //std::mt19937 random_engine(random_device());
+    std::mt19937 random_engine(42);
     std::uniform_int_distribution<int> distribution(0, 255);
 
     for(int i = 0; i < class_num; ++i)

@@ -71,55 +71,13 @@ int main(int argc, char** argv)
     // Create SSD MobileNet model
     SSDModel ssd_model = SSDModel(conf_threshold, nms_threshold);
 
-    /*
-    // Set confidence threshold
-    int init_conf = (int)(conf_threshold * 100);
-    cv::createTrackbar("confidence threshold[%]", kWinName, &init_conf, 99, SSDModel::callback);
-    */
-
-    // Open an image file
-    /* 
-    cv::Mat image = cv::imread(img_file);
-    if(image.empty())
-    {
-        CV_Error(cv::Error::StsError, "Image file (" + img_file + ") cannot open.");
-    }
-
-    // If image is larger than 600px in width, resize it
-    const int resize_w = 600;
-    if(image.cols > resize_w)
-    {
-        int resize_h = image.rows * ((float)resize_w/(float)image.cols);
-        cv::Mat image_orig = image;
-        cv::resize(image_orig, image, cv::Size(resize_w, resize_h));
-    }
-    */
+    // Read image 
     Graphic imageObj = Graphic(img_file);
     imageObj.setClassColor(ssd_model.getClassNumber());
 
-    // Create a window.
-    /* 
-    static const std::string kWinName = "Deep Learning object detection in OpenCV";
-    cv::namedWindow(kWinName, cv::WINDOW_AUTOSIZE);
-    */
-
+    // Detect objects
     std::vector<int> result_indices = ssd_model.detect(imageObj.getImage());
     imageObj.drawResult(ssd_model, result_indices);
-
-    /*
-    for(size_t i = 0; i < indices.size(); i++)
-    {
-        std::cout << i << " : class = " << ssd_model.getDetectedClassName(indices[i]) << 
-                    ", conf = " << ssd_model.getDetectedConfidence(indices[i]) << std::endl;
-        cv::Rect box = ssd_model.getDetectedBox(indices[i]);
-        cv::Point p1 = cv::Point(box.x, box.y);
-        cv::Point p2 = cv::Point(box.x + box.width, box.y + box.height);
-        cv::rectangle(image, p1, p2, cv::Scalar(0, 255, 0), 1);
-    }
-    
-    cv::imshow(kWinName, image);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-    */
 
     cv::waitKey(0);
     
