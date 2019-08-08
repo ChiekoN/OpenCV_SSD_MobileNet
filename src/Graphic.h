@@ -8,6 +8,7 @@ class Graphic {
     Graphic(std::string img_file);
     void drawResult(SSDModel &ssd_model, std::vector<int> &indices);
     void setClassColor(int class_num);
+
     cv::Mat &getImage();
 
   private:

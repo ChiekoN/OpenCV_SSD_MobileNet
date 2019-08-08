@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <iomanip>
 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
@@ -52,10 +53,28 @@ void Graphic::drawResult(SSDModel &ssd_model, std::vector<int> &indices)
     {
         std::cout << i << " : class = " << ssd_model.getDetectedClassName(indices[i]) << 
                     ", conf = " << ssd_model.getDetectedConfidence(indices[i]) << std::endl;
+        // Box
         cv::Rect box = ssd_model.getDetectedBox(indices[i]);
         cv::Point p1 = cv::Point(box.x, box.y);
         cv::Point p2 = cv::Point(box.x + box.width, box.y + box.height);
-        cv::rectangle(image, p1, p2, class_color[ssd_model.getDetectedClassId(indices[i])], 1);
+        int classId = ssd_model.getDetectedClassId(indices[i]);
+        CV_Assert(classId < class_color.size());
+        cv::rectangle(image, p1, p2, class_color[classId], 2);
+
+        // Label
+        std::ostringstream streamObj;
+        streamObj << std::fixed << std::setprecision(2) << ssd_model.getDetectedConfidence(indices[i]);
+        std::string label = ssd_model.getDetectedClassName(indices[i])  + " : " + streamObj.str();
+
+        int baseLine;
+        cv::Size labelSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.38, 1.5, &baseLine);
+
+        int top = std::max(box.y, labelSize.height);
+        cv::Point lp1 = cv::Point(box.x, top - labelSize.height);
+        cv::Point lp2 = cv::Point(box.x + labelSize.width, top);
+        cv::rectangle(image, lp1, lp2, class_color[classId], cv::FILLED);
+        cv::putText(image, label, cv::Point(box.x, top), cv::FONT_HERSHEY_SIMPLEX, 0.38, cv::Scalar(), 1.5);
+
     }
     cv::imshow(kWinName, image);
 }
