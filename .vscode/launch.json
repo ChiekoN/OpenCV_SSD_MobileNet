@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/ssd_obj_detect",
-            "args": [],
+            "args": ["../images/Perth_Australia.avi"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/build",
             "environment": [],

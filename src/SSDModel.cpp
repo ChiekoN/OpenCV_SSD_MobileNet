@@ -1,10 +1,14 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <mutex>
+#include <condition_variable>
+#include <thread>
 
 #include <opencv2/dnn.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
 
+#include "MessageQueue.h"
 #include "SSDModel.h"
 
 // Constructor
@@ -16,8 +20,89 @@ SSDModel::SSDModel(float _conf_threshold=0.5, float _nms_threshold=0.5) :
 }
 
 // Public
-std::vector<int> &SSDModel::detect(cv::Mat &image)
+void SSDModel::thread_for_detection()
 {
+    detection_thread = std::thread(&SSDModel::objectDetection, this);
+}
+void SSDModel::setDetectionQueue(std::shared_ptr<MessageQueue<cv::Mat>> _detect_queue)
+{
+    detect_queue = _detect_queue;
+}
+
+
+void SSDModel::objectDetection()
+{
+    int count = 0;
+    while(true)
+    {
+        cv::Mat current_image = detect_queue->receive();
+        
+        std::cout << " +++++ detection count = " << count << 
+                    ", total = " << detect_queue->getTotal() << std::endl;
+        if(detect_queue->getTotal() > 0 && count >= detect_queue->getTotal())
+        {
+            std::cout << " +++ Detection queue read finish! count = " << count << std::endl;
+            break;
+        }
+
+        std::vector<int> classIds, classIds_out;
+        std::vector<float> confidences, confidences_out;
+        std::vector<cv::Rect> boxes, boxes_out;
+        std::vector<std::string> classNames_out;
+        
+        std::vector<int> indices = detect(current_image, classIds, confidences, boxes);
+        for(int index : indices)
+        {
+            classIds_out.push_back(classIds[index]);
+            confidences_out.push_back(confidences[index]);
+            boxes_out.push_back(boxes[index]);
+            classNames_out.push_back(classes[classIds[index]]);
+        }
+        // lock and push the result to queues
+        std::lock_guard<std::mutex> ulock(_mutex);
+        queue_classIds.push(std::move(classIds_out));
+        queue_confs.push(std::move(confidences_out));
+        queue_boxes.push(std::move(boxes_out));
+        queue_classNames.push(std::move(classNames_out));
+        _cond.notify_one();
+
+        ++count;
+    }   
+}
+
+void SSDModel::getNextDetection(std::vector<int> &classIds,
+                                std::vector<std::string> &classNames,
+                                std::vector<float> &confidences,
+                                std::vector<cv::Rect> &boxes)
+{
+    /* set next queue into parameters */
+    std::unique_lock<std::mutex> ulock(_mutex);
+    _cond.wait(ulock, [this]{ return !queue_classIds.empty(); });
+    classIds = std::move(queue_classIds.front());
+    queue_classIds.pop();
+    classNames = std::move(queue_classNames.front());
+    queue_classNames.pop();
+    confidences = std::move(queue_confs.front());
+    queue_confs.pop();
+    boxes = std::move(queue_boxes.front());
+    queue_boxes.pop();
+}
+
+
+std::vector<int> SSDModel::detect(const cv::Mat &image,
+                                    std::vector<int> &classIds,
+                                    std::vector<float> &confidences,
+                                    std::vector<cv::Rect> &boxes)
+{
+    // Measure time
+    auto start = std::chrono::steady_clock::now();
+
+
+    // Clear previous prediction
+    //classIds.clear();
+    //confidences.clear();
+    //boxes.clear();
+
     // Make a blob of (n, c, h, w)
     cv::Mat blob = cv::dnn::blobFromImage(image, 1.0, sz, cv::Scalar(), swapRB, false);
     // Input the blob to the network
@@ -50,7 +135,7 @@ std::vector<int> &SSDModel::detect(cv::Mat &image)
                 float width = right - left + 1; 
                 float height = bottom - top + 1;
                 
-                std::cout << "(l,t,r,b) = " << left << ", " << top << ", " << right << ", " << bottom << std::endl;
+                //std::cout << "(l,t,r,b) = " << left << ", " << top << ", " << right << ", " << bottom << std::endl;
 
                 classIds.push_back(classId - 1); // classID=0 is background, and we have to start
                                                     // the index from 1 as 0 to get a corresponding
@@ -60,8 +145,15 @@ std::vector<int> &SSDModel::detect(cv::Mat &image)
             }            
         }
     }
+    std::vector<int> indices;
     // Non-Max Supression               
     cv::dnn::NMSBoxes(boxes, confidences, conf_threshold, nms_threshold, indices);
+
+    // Caltulate time
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds> 
+                            (std::chrono::steady_clock::now() - start);
+    std::cout << "duration = " << duration.count() << std::endl;
+
     return indices;
 }
 
@@ -71,7 +163,7 @@ static void callback(int pos, void *userdata)
     conf_threshold = pos * 0.01f;
 }
 */
-
+/* 
 int &SSDModel::getDetectedClassId(int index)
 {
     return classIds[index];
@@ -88,10 +180,12 @@ cv::Rect &SSDModel::getDetectedBox(int index)
 {
     return boxes[index];
 }
+*/
 int SSDModel::getClassNumber()
 {
     return classes.size();
 }
+
 
 // Private
 void SSDModel::readClassFile()
@@ -120,4 +214,9 @@ void SSDModel::loadModel()
     if(outLayerType != "DetectionOutput")
        CV_Error(cv::Error::StsNotImplemented, "Unexpected output layer type: " + outLayerType);     
 
+}
+
+SSDModel::~SSDModel()
+{
+    detection_thread.join();
 }

@@ -66,20 +66,76 @@ int main(int argc, char** argv)
         std::cout << "Input file (" << img_file << ") not found.\n" ;
         return 0;
     }
+    cv::namedWindow("Window", cv::WINDOW_NORMAL);
+/*
+    std::string name = "Window";
+    cv::namedWindow(name, cv::WINDOW_NORMAL);
+    //cv::Mat img = image_queue->receive();
+    cv::Mat img = cv::imread("../images/sweets.jpg");
+    std::cout << "imshow()\n" ;
+    cv::imshow(name, img);
+*/
+
+    std::shared_ptr<MessageQueue<cv::Mat>> image_queue(new MessageQueue<cv::Mat>);
+    std::shared_ptr<MessageQueue<cv::Mat>> detection_queue(new MessageQueue<cv::Mat>);
 
 
     // Create SSD MobileNet model
     SSDModel ssd_model = SSDModel(conf_threshold, nms_threshold);
 
     // Read image 
-    Graphic imageObj = Graphic(img_file);
-    imageObj.setClassColor(ssd_model.getClassNumber());
+    Graphic input = Graphic(img_file, ssd_model.getClassNumber());
+    // Set the pointer of detection queue into the Model object and Graphic object
+    input.setImageQueue(image_queue);
+    input.setDetectionQueue(detection_queue);
 
-    // Detect objects
-    std::vector<int> result_indices = ssd_model.detect(imageObj.getImage());
-    imageObj.drawResult(ssd_model, result_indices);
 
+    ssd_model.setDetectionQueue(detection_queue);
+
+    input.thread_for_read();
+    ssd_model.thread_for_detection();
+
+    std::this_thread::sleep_for(std::chrono::seconds(6));
+
+    std::vector<int> classIds;
+    std::vector<std::string> classNames;
+    std::vector<float> confidences;
+    std::vector<cv::Rect> boxes;
+    cv::Mat current_image;
+    //while(cv::waitKey(1) < 0)
+    int duration = (int)(1000/input.getFps());
+
+
+    int count = 0;
+    while(cv::waitKey(duration) < 0)
+    {
+        std::cout << " *** frame total = " << image_queue->getTotal() << 
+                    ", count = " << count << std::endl;
+        if(image_queue->getTotal() > 0 && count >= image_queue->getTotal())
+        {
+            std::cout << "read frame finished! count = " << count << std::endl;
+            break;
+        }
+
+        //std::this_thread::sleep_for(std::chrono::milliseconds(duration));
+        current_image = image_queue->receive();
+        std::cout << "   size of image_queue = " << image_queue->getSize() << std::endl;
+
+
+        if(count%(input.getDetectFreq()) == 0)
+        {
+            ssd_model.getNextDetection(classIds, classNames, confidences, boxes);
+        }
+        // Detect objects
+        //std::vector<int> result_indices = ssd_model.detect(current_image);
+
+        input.drawResult(current_image, classIds, classNames, confidences, boxes);
+        
+        cv::imshow("Window", current_image);
+
+        ++count;
+    }
     cv::waitKey(0);
-    
     return 0;
+
 }
