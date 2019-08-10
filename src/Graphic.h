@@ -17,6 +17,7 @@ class Graphic
     void setDetectionQueue(std::shared_ptr<MessageQueue<cv::Mat>> _detect_queue);
     float getFps();
     int getDetectFreq();
+    cv::Size getWindowSize();
     void thread_for_read();
 
   private:
@@ -26,6 +27,7 @@ class Graphic
     int _detect_freq;
     int image_width;
     int image_height;
+    cv::Size window_size;
     std::thread read_thread;
     //MessageQueue<cv::Mat> msg_queue;
     std::string image_path;
@@ -38,6 +40,7 @@ class Graphic
     void readImage();
     void setClassColor(int class_num);
     cv::Mat resizeImage(const cv::Mat &image_orig, const int resized_w);
+    cv::Size resizedSize(cv::Size orig);
 };
 
 

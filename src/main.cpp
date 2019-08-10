@@ -89,13 +89,14 @@ int main(int argc, char** argv)
     input.setImageQueue(image_queue);
     input.setDetectionQueue(detection_queue);
 
+    cv::resizeWindow("Window", input.getWindowSize());
 
     ssd_model.setDetectionQueue(detection_queue);
 
     input.thread_for_read();
     ssd_model.thread_for_detection();
 
-    std::this_thread::sleep_for(std::chrono::seconds(6));
+    //std::this_thread::sleep_for(std::chrono::seconds(6));
 
     std::vector<int> classIds;
     std::vector<std::string> classNames;
@@ -117,7 +118,7 @@ int main(int argc, char** argv)
             break;
         }
 
-        //std::this_thread::sleep_for(std::chrono::milliseconds(duration));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
         current_image = image_queue->receive();
         std::cout << "   size of image_queue = " << image_queue->getSize() << std::endl;
 

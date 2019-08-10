@@ -14,6 +14,19 @@ Graphic::Graphic(std::string _img_path, int class_num) : image_path(_img_path)
 {
     //cv::namedWindow(kWinName);
     setClassColor(class_num);
+
+    cv::VideoCapture cap(this->image_path);
+    _fps = (float)cap.get(cv::CAP_PROP_FPS);
+    _detect_freq = ((int)_fps)/2;
+    int width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
+    int height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+    window_size = resizedSize(cv::Size(width, height));
+
+    std::cout << "width = " << width << std::endl;
+    std::cout << "height = " << height << std::endl;
+    std::cout << "fps = " << _fps << std::endl;
+
+    cap.release();
 }
 
 void Graphic::thread_for_read()
@@ -24,15 +37,20 @@ void Graphic::thread_for_read()
 void Graphic::readImage()
 {
     cv::VideoCapture cap(this->image_path);
-    float fps = (float)cap.get(cv::CAP_PROP_FPS);
-    this->_fps = fps;
-    this->_detect_freq = ((int)fps)/2;
-    std::cout << "width = " << (int)cap.get(cv::CAP_PROP_FRAME_WIDTH) << std::endl;
-    std::cout << "height = " << (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT) << std::endl;
+    //float fps = (float)cap.get(cv::CAP_PROP_FPS);
+    //this->_fps = fps;
+    //this->_detect_freq = ((int)fps)/2;
+    //int width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
+    //int height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+    //std::cout << "width = " << width << std::endl;
+    //std::cout << "height = " << height << std::endl;
     //image_width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
     //image_height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
-    std::cout << "fps = " << fps << std::endl;
-    
+    //std::cout << "fps = " << fps << std::endl;
+
+    //cv::Size new_size = resizedSize(cv::Size(width, height));
+    //cap.set(cv::CAP_PROP_FRAME_WIDTH, new_size.width);
+    //cap.set(cv::CAP_PROP_FRAME_HEIGHT, new_size.height);
     //image = cv::imread(img_path);
     
     if(!cap.isOpened())
@@ -48,7 +66,7 @@ void Graphic::readImage()
 
     while(true)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
         cv::Mat frame;
         cap >> frame;
         if(frame.empty())
@@ -93,6 +111,24 @@ cv::Mat Graphic::resizeImage(const cv::Mat &image_orig, const int resized_w=600)
         return image_new;
     }
     return image_orig;
+}
+
+cv::Size Graphic::getWindowSize()
+{
+    return window_size;
+}
+cv::Size Graphic::resizedSize(cv::Size orig)
+{
+    int w = 600;
+    int h = orig.height * (float)w/(float)orig.width;
+    if(h > 600)
+    {
+        int h_orig = h;
+        h = 600;
+        w = w * ((float)h / (float)h_orig);
+    }
+    std::cout << "(w, h) = " << w << ", " << h << std::endl;
+    return cv::Size(w, h);
 }
 
 void Graphic::setClassColor(int class_num)
