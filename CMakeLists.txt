@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.7)
 
+set(CMAKE_CXX_STANDARD 17)
+message("CMAKE_CXX_STANDARD = ${CMAKE_CXX_STANDARD}")
+
 project(SSD_objectdetection)
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++17 -pthread")
+#set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++17 -pthread")
+set(CMAKE_CXX_FLAGS "-pthread")
 
 find_package(OpenCV 4.1 REQUIRED)
 
