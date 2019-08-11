@@ -25,10 +25,12 @@ class MessageQueue
         _messages.push_back(std::move(msg));
         _cond.notify_one();
     }
+
     size_t getSize()
     {
         return _messages.size();
     }
+    
     int getTotal()
     {
         // if _total = 0, sending is unfinished
@@ -41,6 +43,7 @@ class MessageQueue
         std::lock_guard<std::mutex> ulock(_mutex);
         _total = total;
     }
+
   private:
     std::mutex _mutex;
     std::condition_variable _cond;

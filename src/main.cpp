@@ -27,13 +27,6 @@
 #include "Graphic.h"
 
 
-/*
-void callback(int pos, void *userdata)
-{
-    conf_threshold = pos * 0.01f;
-}
-*/
-
 int main(int argc, char** argv)
 {
     // Get command line options.
@@ -67,51 +60,43 @@ int main(int argc, char** argv)
         return 0;
     }
     cv::namedWindow("Window", cv::WINDOW_NORMAL);
-/*
-    std::string name = "Window";
-    cv::namedWindow(name, cv::WINDOW_NORMAL);
-    //cv::Mat img = image_queue->receive();
-    cv::Mat img = cv::imread("../images/sweets.jpg");
-    std::cout << "imshow()\n" ;
-    cv::imshow(name, img);
-*/
 
+    // Create queues for sending image to display and to detection
     std::shared_ptr<MessageQueue<cv::Mat>> image_queue(new MessageQueue<cv::Mat>);
     std::shared_ptr<MessageQueue<cv::Mat>> detection_queue(new MessageQueue<cv::Mat>);
-
 
     // Create SSD MobileNet model
     SSDModel ssd_model = SSDModel(conf_threshold, nms_threshold);
 
-    // Read image 
+    // Create Graphic model which handles images 
     Graphic input = Graphic(img_file, ssd_model.getClassNumber());
-    // Set the pointer of detection queue into the Model object and Graphic object
+
+    // Set shared pointers of queues into objects
     input.setImageQueue(image_queue);
     input.setDetectionQueue(detection_queue);
+    ssd_model.setDetectionQueue(detection_queue);
 
     cv::resizeWindow("Window", input.getWindowSize());
 
-    ssd_model.setDetectionQueue(detection_queue);
-
+    // Launch the readinig thread and the detecting thread
     input.thread_for_read();
     ssd_model.thread_for_detection();
 
-    //std::this_thread::sleep_for(std::chrono::seconds(6));
 
     std::vector<int> classIds;
     std::vector<std::string> classNames;
     std::vector<float> confidences;
     std::vector<cv::Rect> boxes;
     cv::Mat current_image;
-    //while(cv::waitKey(1) < 0)
-    int duration = (int)(1000/input.getFps());
 
-
+    const int duration = (int)(1000/input.getFps());
     int count = 0;
     while(cv::waitKey(duration) < 0)
     {
+        /*
         std::cout << " *** frame total = " << image_queue->getTotal() << 
                     ", count = " << count << std::endl;
+        */
         if(image_queue->getTotal() > 0 && count >= image_queue->getTotal())
         {
             std::cout << "read frame finished! count = " << count << std::endl;
@@ -120,18 +105,16 @@ int main(int argc, char** argv)
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
         current_image = image_queue->receive();
-        std::cout << "   size of image_queue = " << image_queue->getSize() << std::endl;
+        /* std::cout << "   size of image_queue = " << image_queue->getSize() << std::endl; */
 
-
+        // Execute the detection once per counts specified by getDetectFreq()
         if(count%(input.getDetectFreq()) == 0)
         {
             ssd_model.getNextDetection(classIds, classNames, confidences, boxes);
         }
-        // Detect objects
-        //std::vector<int> result_indices = ssd_model.detect(current_image);
 
+        // Plot the result and show the image on window
         input.drawResult(current_image, classIds, classNames, confidences, boxes);
-        
         cv::imshow("Window", current_image);
 
         ++count;

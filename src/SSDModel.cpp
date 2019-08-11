@@ -11,7 +11,10 @@
 #include "MessageQueue.h"
 #include "SSDModel.h"
 
-// Constructor
+
+// Public
+
+// Set input thresholds, read class list file and load the SSD MobileNet model
 SSDModel::SSDModel(float _conf_threshold=0.5, float _nms_threshold=0.5) :
                     conf_threshold(_conf_threshold), nms_threshold(_nms_threshold)
 {
@@ -19,17 +22,52 @@ SSDModel::SSDModel(float _conf_threshold=0.5, float _nms_threshold=0.5) :
     loadModel();
 }
 
-// Public
+SSDModel::~SSDModel()
+{
+    detection_thread.join();
+}
+
 void SSDModel::thread_for_detection()
 {
     detection_thread = std::thread(&SSDModel::objectDetection, this);
 }
+
 void SSDModel::setDetectionQueue(std::shared_ptr<MessageQueue<cv::Mat>> _detect_queue)
 {
     detect_queue = _detect_queue;
 }
 
+// Get the result of detection from queues and set it to
+//  reference parameters
+void SSDModel::getNextDetection(std::vector<int> &classIds,
+                                std::vector<std::string> &classNames,
+                                std::vector<float> &confidences,
+                                std::vector<cv::Rect> &boxes)
+{
+    /* set next queue into parameters */
+    std::unique_lock<std::mutex> ulock(_mutex);
+    _cond.wait(ulock, [this]{ return !queue_classIds.empty(); });
+    classIds = std::move(queue_classIds.front());
+    queue_classIds.pop();
+    classNames = std::move(queue_classNames.front());
+    queue_classNames.pop();
+    confidences = std::move(queue_confs.front());
+    queue_confs.pop();
+    boxes = std::move(queue_boxes.front());
+    queue_boxes.pop();
+}
 
+// Return the number of classes
+int SSDModel::getClassNumber()
+{
+    return classes.size();
+}
+
+
+// Private
+
+// Get images from detect_queue, perform detection,
+//  and store the result in queues.
 void SSDModel::objectDetection()
 {
     int count = 0;
@@ -37,8 +75,10 @@ void SSDModel::objectDetection()
     {
         cv::Mat current_image = detect_queue->receive();
         
+        /*
         std::cout << " +++++ detection count = " << count << 
                     ", total = " << detect_queue->getTotal() << std::endl;
+        */
         if(detect_queue->getTotal() > 0 && count >= detect_queue->getTotal())
         {
             std::cout << " +++ Detection queue read finish! count = " << count << std::endl;
@@ -50,6 +90,7 @@ void SSDModel::objectDetection()
         std::vector<cv::Rect> boxes, boxes_out;
         std::vector<std::string> classNames_out;
         
+        // Input the image to the model and get the result
         std::vector<int> indices = detect(current_image, classIds, confidences, boxes);
         for(int index : indices)
         {
@@ -70,25 +111,10 @@ void SSDModel::objectDetection()
     }   
 }
 
-void SSDModel::getNextDetection(std::vector<int> &classIds,
-                                std::vector<std::string> &classNames,
-                                std::vector<float> &confidences,
-                                std::vector<cv::Rect> &boxes)
-{
-    /* set next queue into parameters */
-    std::unique_lock<std::mutex> ulock(_mutex);
-    _cond.wait(ulock, [this]{ return !queue_classIds.empty(); });
-    classIds = std::move(queue_classIds.front());
-    queue_classIds.pop();
-    classNames = std::move(queue_classNames.front());
-    queue_classNames.pop();
-    confidences = std::move(queue_confs.front());
-    queue_confs.pop();
-    boxes = std::move(queue_boxes.front());
-    queue_boxes.pop();
-}
-
-
+// Perform object detection to a image being input.
+// The output from the network is set to reference parameters(classIds, confidences, boxes).
+// Return: indices which is used to pick up the final detection to show
+//         from vectors listed above.  
 std::vector<int> SSDModel::detect(const cv::Mat &image,
                                     std::vector<int> &classIds,
                                     std::vector<float> &confidences,
@@ -96,12 +122,6 @@ std::vector<int> SSDModel::detect(const cv::Mat &image,
 {
     // Measure time
     auto start = std::chrono::steady_clock::now();
-
-
-    // Clear previous prediction
-    //classIds.clear();
-    //confidences.clear();
-    //boxes.clear();
 
     // Make a blob of (n, c, h, w)
     cv::Mat blob = cv::dnn::blobFromImage(image, 1.0, sz, cv::Scalar(), swapRB, false);
@@ -134,8 +154,6 @@ std::vector<int> SSDModel::detect(const cv::Mat &image,
                 //  and as right and bottom are exclusive?
                 float width = right - left + 1; 
                 float height = bottom - top + 1;
-                
-                //std::cout << "(l,t,r,b) = " << left << ", " << top << ", " << right << ", " << bottom << std::endl;
 
                 classIds.push_back(classId - 1); // classID=0 is background, and we have to start
                                                     // the index from 1 as 0 to get a corresponding
@@ -157,37 +175,7 @@ std::vector<int> SSDModel::detect(const cv::Mat &image,
     return indices;
 }
 
-/*
-static void callback(int pos, void *userdata)
-{
-    conf_threshold = pos * 0.01f;
-}
-*/
-/* 
-int &SSDModel::getDetectedClassId(int index)
-{
-    return classIds[index];
-}
-std::string &SSDModel::getDetectedClassName(int index)
-{
-    return classes[classIds[index]];
-}
-float &SSDModel::getDetectedConfidence(int index)
-{
-    return confidences[index];
-}
-cv::Rect &SSDModel::getDetectedBox(int index)
-{
-    return boxes[index];
-}
-*/
-int SSDModel::getClassNumber()
-{
-    return classes.size();
-}
-
-
-// Private
+// Read Class file and store the class list to classes  .
 void SSDModel::readClassFile()
 {
     // Open and read class file
@@ -202,6 +190,7 @@ void SSDModel::readClassFile()
     }
 }
 
+// Load DNN model and store it to the private attribute.
 void SSDModel::loadModel()
 {
     net = cv::dnn::readNetFromTensorflow(model_file, config_file);
@@ -216,7 +205,3 @@ void SSDModel::loadModel()
 
 }
 
-SSDModel::~SSDModel()
-{
-    detection_thread.join();
-}

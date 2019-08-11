@@ -1,4 +1,3 @@
-// SSDModel class
 #ifndef SSDMODEL_H
 #define SSDMODEL_H
 #include <opencv2/dnn.hpp>
@@ -7,15 +6,12 @@
 #include "MessageQueue.h"
 
 
-class SSDModel {
+class SSDModel
+{
   public:
-
     SSDModel(float _conf_threshold, float _nms_threshold);
     ~SSDModel();
 
-    // Functions  
-    /*  static void callback(int pos, void *userdata); */
-    // Getter
     int &getDetectedClassId(int index);
     std::string &getDetectedClassName(int index);
     float &getDetectedConfidence(int index);
@@ -29,9 +25,8 @@ class SSDModel {
                           std::vector<float> &confidences,
                           std::vector<cv::Rect> &boxes);
 
-
   private:
-
+    // Detection threshold
     float conf_threshold;
     float nms_threshold;
 
@@ -48,9 +43,9 @@ class SSDModel {
 
     // Store the list of classe name
     std::vector<std::string> classes;
-    // network object
+    // DNN model
     cv::dnn::Net net;
-    // detected objects
+    // Information about detected objects
     std::shared_ptr<MessageQueue<cv::Mat>> detect_queue;
     std::queue<std::vector<int>> queue_classIds;
     std::queue<std::vector<std::string>> queue_classNames;
@@ -58,24 +53,17 @@ class SSDModel {
     std::queue<std::vector<cv::Rect>> queue_boxes;
     std::mutex _mutex;
     std::condition_variable _cond;
-    
-    //std::vector<int> indices; // indices of Non-Max Supression
-
+    // thread for detection
     std::thread detection_thread;
 
-    // Functions
 
-    void readClassFile(); // Read class File
+    void readClassFile();
     void loadModel();
-
     std::vector<int> detect(const cv::Mat &image, std::vector<int> &classIds,
                                     std::vector<float> &confidences,
                                     std::vector<cv::Rect> &boxes);
     void objectDetection();
     void getResult();
-
- 
-   
 };
 
 #endif
