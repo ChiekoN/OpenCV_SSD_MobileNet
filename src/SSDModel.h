@@ -12,12 +12,7 @@ class SSDModel
     SSDModel(float _conf_threshold, float _nms_threshold);
     ~SSDModel();
 
-    int &getDetectedClassId(int index);
-    std::string &getDetectedClassName(int index);
-    float &getDetectedConfidence(int index);
-    cv::Rect &getDetectedBox(int index);
     int getClassNumber();
-
     void thread_for_detection();
     void setDetectionQueue(std::shared_ptr<MessageQueue<cv::Mat>> _detect_queue);
     void getNextDetection(std::vector<int> &classIds,
@@ -55,7 +50,6 @@ class SSDModel
     std::condition_variable _cond;
     // thread for detection
     std::thread detection_thread;
-
 
     void readClassFile();
     void loadModel();

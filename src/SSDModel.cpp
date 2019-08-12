@@ -12,8 +12,6 @@
 #include "SSDModel.h"
 
 
-// Public
-
 // Set input thresholds, read class list file and load the SSD MobileNet model
 SSDModel::SSDModel(float _conf_threshold=0.5, float _nms_threshold=0.5) :
                     conf_threshold(_conf_threshold), nms_threshold(_nms_threshold)
@@ -64,8 +62,6 @@ int SSDModel::getClassNumber()
 }
 
 
-// Private
-
 // Get images from detect_queue, perform detection,
 //  and store the result in queues.
 void SSDModel::objectDetection()
@@ -74,14 +70,9 @@ void SSDModel::objectDetection()
     while(true)
     {
         cv::Mat current_image = detect_queue->receive();
-        
-        /*
-        std::cout << " +++++ detection count = " << count << 
-                    ", total = " << detect_queue->getTotal() << std::endl;
-        */
+
         if(detect_queue->getTotal() > 0 && count >= detect_queue->getTotal())
         {
-            std::cout << " +++ Detection queue read finish! count = " << count << std::endl;
             break;
         }
 
@@ -120,9 +111,6 @@ std::vector<int> SSDModel::detect(const cv::Mat &image,
                                     std::vector<float> &confidences,
                                     std::vector<cv::Rect> &boxes)
 {
-    // Measure time
-    auto start = std::chrono::steady_clock::now();
-
     // Make a blob of (n, c, h, w)
     cv::Mat blob = cv::dnn::blobFromImage(image, 1.0, sz, cv::Scalar(), swapRB, false);
     // Input the blob to the network
@@ -166,11 +154,6 @@ std::vector<int> SSDModel::detect(const cv::Mat &image,
     std::vector<int> indices;
     // Non-Max Supression               
     cv::dnn::NMSBoxes(boxes, confidences, conf_threshold, nms_threshold, indices);
-
-    // Caltulate time
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds> 
-                            (std::chrono::steady_clock::now() - start);
-    std::cout << "duration = " << duration.count() << std::endl;
 
     return indices;
 }

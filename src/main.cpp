@@ -11,6 +11,7 @@
 // Sample source:
 // https://github.com/opencv/opencv/blob/master/samples/dnn/object_detection.cpp
 //
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -22,6 +23,10 @@
 #include <opencv2/highgui.hpp>
 
 #include <opencv2/core/utils/filesystem.hpp>
+
+#if CV_VERSION_MAJOR < 4
+#pragma message( "OpenCV version < 4" )
+#endif
 
 #include "SSDModel.h"
 #include "Graphic.h"
@@ -59,7 +64,9 @@ int main(int argc, char** argv)
         std::cout << "Input file (" << img_file << ") not found.\n" ;
         return 0;
     }
-    cv::namedWindow("Window", cv::WINDOW_NORMAL);
+
+    const std::string window_name= "Object Detection";
+    cv::namedWindow(window_name, cv::WINDOW_NORMAL);
 
     // Create queues for sending image to display and to detection
     std::shared_ptr<MessageQueue<cv::Mat>> image_queue(new MessageQueue<cv::Mat>);
@@ -76,7 +83,7 @@ int main(int argc, char** argv)
     input.setDetectionQueue(detection_queue);
     ssd_model.setDetectionQueue(detection_queue);
 
-    cv::resizeWindow("Window", input.getWindowSize());
+    cv::resizeWindow(window_name, input.getWindowSize());
 
     // Launch the readinig thread and the detecting thread
     input.thread_for_read();
@@ -91,35 +98,32 @@ int main(int argc, char** argv)
 
     const int duration = (int)(1000/input.getFps());
     int count = 0;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
     while(cv::waitKey(duration) < 0)
     {
-        /*
-        std::cout << " *** frame total = " << image_queue->getTotal() << 
-                    ", count = " << count << std::endl;
-        */
+
         if(image_queue->getTotal() > 0 && count >= image_queue->getTotal())
         {
-            std::cout << "read frame finished! count = " << count << std::endl;
             break;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1));
         current_image = image_queue->receive();
-        /* std::cout << "   size of image_queue = " << image_queue->getSize() << std::endl; */
-
+ 
         // Execute the detection once per counts specified by getDetectFreq()
         if(count%(input.getDetectFreq()) == 0)
-        {
+        {   
             ssd_model.getNextDetection(classIds, classNames, confidences, boxes);
         }
 
         // Plot the result and show the image on window
         input.drawResult(current_image, classIds, classNames, confidences, boxes);
-        cv::imshow("Window", current_image);
+        cv::imshow(window_name, current_image);
 
         ++count;
     }
+    std::cout << " --- Object detection finished. Press Enter key to quit.---\n";
     cv::waitKey(0);
     return 0;
-
 }

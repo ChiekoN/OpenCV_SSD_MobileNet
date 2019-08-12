@@ -19,14 +19,15 @@ Graphic::Graphic(std::string _img_path, int class_num) : image_path(_img_path)
     // Open the video once, get information, then close the video
     cv::VideoCapture cap(image_path);
     _fps = (float)cap.get(cv::CAP_PROP_FPS);
-    _detect_freq = ((int)_fps)/2;
+    _detect_freq = ((int)_fps)/4;
     int width = (int)cap.get(cv::CAP_PROP_FRAME_WIDTH);
     int height = (int)cap.get(cv::CAP_PROP_FRAME_HEIGHT);
     window_size = resizedSize(cv::Size(width, height));
 
-    std::cout << "width = " << width << std::endl;
-    std::cout << "height = " << height << std::endl;
-    std::cout << "fps = " << _fps << std::endl;
+    std::cout << "Image file : " << image_path << std::endl;
+    std::cout << "- original width = " << width << std::endl;
+    std::cout << "- original height = " << height << std::endl;
+    std::cout << "- fps = " << _fps << std::endl;
 
     cap.release();
 }
@@ -73,13 +74,8 @@ void Graphic::drawResult(cv::Mat &image,
                          const std::vector<float> &confidences,
                          const std::vector<cv::Rect> &boxes)
 {
-    // Measure time
-    auto start = std::chrono::steady_clock::now();
-
     for(size_t i = 0; i < classIds.size(); i++)
     {
-        std::cout << i << " : class = " << classNames[i] << 
-                    ", conf = " << confidences[i] << std::endl;
         // Box
         cv::Point p1 = cv::Point(boxes[i].x, boxes[i].y);
         cv::Point p2 = cv::Point(boxes[i].x + boxes[i].width, boxes[i].y + boxes[i].height);
@@ -99,12 +95,7 @@ void Graphic::drawResult(cv::Mat &image,
         cv::Point lp2 = cv::Point(boxes[i].x + labelSize.width, top);
         cv::rectangle(image, lp1, lp2, class_color[classIds[i]], cv::FILLED);
         cv::putText(image, label, cv::Point(boxes[i].x, top-1), cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(), 1);
-
     }
-     // Caltulate time
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds> 
-                            (std::chrono::steady_clock::now() - start);
-    std::cout << "duration(draw) = " << duration.count() << std::endl;
 }
 
 
@@ -138,7 +129,6 @@ void Graphic::readImage()
         {
             cv::Mat frame1 = frame;
             detect_queue->send(std::move(frame1));
-            std::cout << " --- send detect queue!\n";
             ++d_count;
         }
         image_queue->send(std::move(cv::Mat(frame)));
@@ -152,25 +142,7 @@ void Graphic::readImage()
     // Send an empty frame to prevent SSDModel::objectDetection from 
     //  keeping waiting in detect_queue->receive()
     detect_queue->send(std::move(cv::Mat()));
-    std::cout << "msg_qaueue.total = v" << image_queue->getTotal() << std::endl;
-    std::cout << "detect_queue.total = " << detect_queue->getTotal() << std::endl;
 }
-
-// Resize image to a fixed size.
-// resized_w :　width(px) of resized image
-/*
-cv::Mat Graphic::resizeImage(const cv::Mat &image_orig, const int resized_w=600)
-{
-    if(image_orig.cols > resized_w)
-    {
-        int resized_h = image_orig.rows * ((float)resized_w/(float)image_orig.cols);
-        cv::Mat image_new;
-        cv::resize(image_orig, image_new, cv::Size(resized_w, resized_h));
-        return image_new;
-    }
-    return image_orig;
-}
-*/
 
 // Calculate the resized window size.
 // This function returns the resized size where:
@@ -185,7 +157,6 @@ cv::Size Graphic::resizedSize(cv::Size orig)
         h = 600;
         w = w * ((float)h / (float)h_orig);
     }
-    std::cout << "(w, h) = " << w << ", " << h << std::endl;
     return cv::Size(w, h);
 }
 
