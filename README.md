@@ -1,5 +1,5 @@
 # CPPND : Capstone Project
-## Object Detection with SSD MobileNet in C++
+## SSD MobileNet Object Detection in C++
 
 ## Overview
 I implemented the object detection model using OpenCV. The Deep Neural Network model I employed here is SSD(Single Shot MultiBox Detector) with MobileNet. This program reads an image file, which could be a single photo or a movie, and performs object detection, then shows the image with indicators(box for the object detected, category name, and confidence(%)). This model can detect 90 categories of objects (listed in [`model/object_detection_classes_coco.txt`](model/object_detection_classes_coco.txt)).
@@ -25,35 +25,34 @@ After, in the main thread, image data in "image queue" is retrieved one by one. 
 
 ### Files and Classes
 - `main.cpp`: Includes `main()` function.
- - Takes command line options and set parameters into inner variables.
- - Creates `image_queue` and `detection_queue`, create `SSDModel` object and `Graphic` object, and call functions in both objects which launch threads.
- - In a loop, it reads image data from the queue, get the result of detection, draw it on the image and show.
+  - Takes command line options and sets parameters into inner variables.
+  - Creates `image_queue` and `detection_queue`, creates `SSDModel` object and `Graphic` object, and calls functions in both objects which launch threads.
+  - In a loop, it reads image data from the queue, gets the result of detection, draws it on the image and show.
 
 
-- `Graphic.h` `Graphic.cpp`: Define `Graphic` class.
- - Launch a thread which reads the image file
- - Draw the result of detection on the image
- - Store information about the image
+- `Graphic.h` `Graphic.cpp`: Defines `Graphic` class.
+  - Launchs a thread which reads the image file
+  - Draws the result of detection on the image
+  - Stores information about the image
 
 
-- `SSDModel.h` `SSDModel.cpp` : Define `SSDModel` class.
- - Load the DNN model
- - Launch a thread which performs object detection
- - Store the result of detection in a queue, and retrieve it
+- `SSDModel.h` `SSDModel.cpp` : Defines `SSDModel` class.
+  - Loads the DNN model
+  - Launchs a thread which performs object detection
+  - Stores the result of detection in a queue, and retrieves it
 
 
 - `MessageQueue.h` : Define `MessageQueue` class.
- - Holds a queue, and provides functions to send and receive frames using the queue.
- - Provides functions which sends and receives the total number of frames sent
+  - Holds a queue, and provides functions to send and receive frames using the queue.
+  - Provides functions which sends and receives the total number of frames sent
 
 ## Contents
 This repository contains:
 - `src/` : Source files listed above
 - `model/` : Files for the DNN model
- - SSD MobileNet model file : `frozen_inference_graph.pb` (download *ssd_mobilenet_v2_coco* from [here](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md))
- - SSD MobileNet config file : `ssd_mobilenet_v2_coco_2018_03_29.pbtxt` (download from [here](https://github.com/opencv/opencv_extra/tree/master/testdata/dnn))
- - class file : `object_detection_classes_coco.txt` (download from [here](https://github.com/opencv/opencv/tree/master/samples/data/dnn))
-
+  - SSD MobileNet model file : `frozen_inference_graph.pb` (download *ssd_mobilenet_v2_coco* from [here](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md))
+  - SSD MobileNet config file : `ssd_mobilenet_v2_coco_2018_03_29.pbtxt` (download from [here](https://github.com/opencv/opencv_extra/tree/master/testdata/dnn))
+  - class file : `object_detection_classes_coco.txt` (download from [here](https://github.com/opencv/opencv/tree/master/samples/data/dnn))
 
 - `images/` : Sample photos and videos to test the program
 - `result/` : Examples of output images
