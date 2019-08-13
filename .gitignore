@@ -1,3 +1,5 @@
 sample_source
 /build/*
 /build
+/.vscode/*
+/.vscode

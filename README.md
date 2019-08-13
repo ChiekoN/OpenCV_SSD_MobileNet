@@ -1,10 +1,15 @@
 # CPPND : Capstone Project
-## Object Detection with SSD MobileNet model (Capstone Option 1)
+## Object Detection with SSD MobileNet in C++
 
 ## Overview
 I implemented the object detection model using OpenCV. The Deep Neural Network model I employed here is SSD(Single Shot MultiBox Detector) with MobileNet. This program reads an image file, which could be a single photo or a movie, and performs object detection, then shows the image with indicators(box for the object detected, category name, and confidence(%)). This model can detect 90 categories of objects (listed in [`model/object_detection_classes_coco.txt`](model/object_detection_classes_coco.txt)).
 
-I decided to build this project because I learned Deep Learning before and I was interested in making programs in which Deep Learning techinques are used by C++. After experiments with prototypes, I realized performing object detection through the network would be computationally expensive, which made the movie with object detection very slow. So I decided to create a thread which execute object detection in an independent time sequence from the main thread. The most challenging part was to get the result of detection and draw it on the right frame without interupting playing the movie.
+![alt sweets](result/sweets_result.jpg)
+
+
+![alt school zone](result/schoolzone_result.gif)
+
+I was interested in making programs in which Deep Learning techinques are used by C++, so I decided to build this project as my capstone project(free theme) in [C++ Nanodegree at Udacity](https://www.udacity.com/course/c-plus-plus-nanodegree--nd213). After experiments with prototypes, I realized performing object detection through the network would be computationally expensive, which made the movie stop at every frame to play and made it very slow. To solve this problem, I created a thread which execute object detection in an independent time order from the main thread. The most challenging part was to get the result of detection and draw it on the right frame without interupting the movie.
 
 
 ## Structure
@@ -55,12 +60,22 @@ This repository contains:
 - `CMakeLists.txt` : cmake configuration file
 - `README.md` : This file
 
-## Libraries
-- OpenCV >= 4 (already installed in Udacity's workspace)
+## Requirements
+- **OpenCV >= 4**
   - [Install instruction for Linux](https://docs.opencv.org/4.1.1/d7/d9f/tutorial_linux_install.html)
   - [Install istruction for Windows](https://www.learnopencv.com/install-opencv-4-on-windows/)
   - [Install instruction for Mac](https://www.learnopencv.com/install-opencv-4-on-macos/)
-
+- cmake >= 3.7
+    * All OSes: [click here for installation instructions](https://cmake.org/install/)
+- make >= 4.1 (Linux, Mac), 3.81 (Windows)
+    * Linux: make is installed by default on most Linux distros
+    * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
+    * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
+- gcc/g++ >= 5.4
+    * Linux: gcc / g++ is installed by default on most Linux distros
+    * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
+    * Windows: recommend using [MinGW](http://www.mingw.org/)
+- **GPU** is recommended
 
 ## Build
 In the root directory (this repository), execute the command below:
@@ -80,75 +95,15 @@ This reads an image file and show the result of object detection. `<image file>`
 
 #### Options
  - `-c` : specifies *confidence threshold* between 0 and 1.0. If omitted, default value is 0.5. (example: `-c=0.3`)
- - `-n` : specifies the threshold used for Non-max Suppression between 0 and 1.0. If omitted, default value is 0.5. (example: `-n=0.7`)
+ - `-n` : specifies the threshold used for *Non-max Suppression* between 0 and 1.0. If omitted, default value is 0.5. (example: `-n=0.7`)
  - `-h` `-?` `--help` `--usage`: Show usage.
 
 
-#### Example with test images:
+#### Example
 
 `./ssd_obj_detect -c=0.3 ../images/bunnings.JPG`
 
-**NOTE:** In Udacity's workplace, please run the program from Visual Studio Code in DESKTOP. The output window isn't shown from workspace terminal.
 
-## Expected Output
-
-#### Photo
-  `./ssd_obj_detect ../images/sweets.jpg`
-
-![alt sweets](result/sweets_result.jpg)
-
-#### Movie
-  `./ssd_obj_detect ../images/schoolzone.mp3`
-
-![alt school zone](result/schoolzone_result.gif)
-
-
-
-## Rubrics
-#### README
- - This document
-
-#### Compiling and Testing
- - I compiled on the workspace and tested with both photos and movies and ensured that the expected images are shown.
-
-#### Loops, Functions, I/O
-- The project accepts user input and processes the input.
-   - `main.cpp`(35-66): Used `cv::CommandLineParser` provided by OpenCV
-
-#### Object Oriented Programming
-- The project uses Object Oriented Programming techniques.
-  - `Graphic.cpp` `SSDModel.cpp` `MessageQueue.h` : This project has three classes that have some attributes and functions.
-
-
-- Classes use appropriate access specifiers for class members.
-  - `Graphic.cpp` `SSDModel.cpp` `MessageQueue.h` : All class data members are specified as either `public` or `private`.
-
-#### Memory Management
-- The project makes use of references in function declarations.
- - `SSDModel.cpp`(40):
-   ```
-   void SSDModel::getNextDetection(std::vector<int> &classIds,
-                                    std::vector<std::string> &classNames,
-                                    std::vector<float> &confidences,
-                                    std::vector<cv::Rect> &boxes))
-   ```
- - `Graphic.cpp`(71):
-   ```
-   void Graphic::drawResult(cv::Mat &image,
-                            const std::vector<int> &classIds,
-                            const std::vector<std::string> &classNames,
-                            const std::vector<float> &confidences,
-                            const std::vector<cv::Rect> &boxes)
-  ```
-
-#### Concurrency
-- The project uses multithreading.
- - `Graphic.cpp`(42) : creates a thread
- - `SSDModel.cpp`(30) : creates a thread
-
-
-- A mutex or lock is used in the project.
- - `MessageQueue.h`(14, 24, 38, 43)
 
 
 ## Reference
